@@ -12,8 +12,9 @@ const logger = createLogger('auth')
 // TODO: Provide a URL that can be used to download a certificate that can be used
 // to verify JWT token signature.
 // To get this URL you need to go to an Auth0 page -> Show Advanced Settings -> Endpoints -> JSON Web Key Set
-const jwksUrl = '...'
 
+const jwksUrl = 'https://dev-mdg82m6a.us.auth0.com/.well-known/jwks.json'
+let cachedCertificate
 export const handler = async (
   event: CustomAuthorizerEvent
 ): Promise<CustomAuthorizerResult> => {
@@ -57,11 +58,20 @@ export const handler = async (
 async function verifyToken(authHeader: string): Promise<JwtPayload> {
   const token = getToken(authHeader)
   const jwt: Jwt = decode(token, { complete: true }) as Jwt
-
+  console.log(token)
+  console.log(jwt.payload)
   // TODO: Implement token verification
   // You should implement it similarly to how it was implemented for the exercise for the lesson 5
   // You can read more about how to do this here: https://auth0.com/blog/navigating-rs256-and-jwks/
-  return undefined
+  console.log("In this block")
+  const keyId = jwt.header.kid
+  console.log("Second here this block")
+  logger.info(`keyId: ${jwt}`)
+
+  const pemCertificate = await getCertificateByKeyId(keyId)
+
+  return verify(token, pemCertificate, { algorithms: ['RS256'] }) as JwtPayload
+
 }
 
 function getToken(authHeader: string): string {
@@ -69,9 +79,45 @@ function getToken(authHeader: string): string {
 
   if (!authHeader.toLowerCase().startsWith('bearer '))
     throw new Error('Invalid authentication header')
-
   const split = authHeader.split(' ')
+  console.log(split)
   const token = split[1]
 
   return token
+}
+
+async function getCertificateByKeyId(keyId: string): Promise<string> {
+  if (cachedCertificate) return cachedCertificate
+
+  const response = await Axios.get(jwksUrl)
+  const keys = response.data.keys
+
+  if (!keys || !keys.length) throw new Error('No JWKS keys found')
+
+  const signingKeys = keys.filter(
+    (key) =>
+      key.use === 'sig' &&
+      key.kty === 'RSA' &&
+      key.alg === 'RS256' &&
+      key.n &&
+      key.e &&
+      key.kid === keyId &&
+      key.x5c &&
+      key.x5c.length
+  )
+
+  if (!signingKeys.length) throw new Error('No JWKS signing keys found')
+
+  const matchedKey = signingKeys[0]
+  const publicCertificate = matchedKey.x5c[0] // public key
+
+  cachedCertificate = getPemFromCertificate(publicCertificate)
+  logger.info('pemCertificate:', cachedCertificate)
+
+  return cachedCertificate
+}
+
+function getPemFromCertificate(cert: string): string {
+  let pemCert = cert.match(/.{1,64}/g).join('\n')
+  return `-----BEGIN CERTIFICATE-----\n${pemCert}\n-----END CERTIFICATE-----\n`
 }
