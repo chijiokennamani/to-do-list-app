@@ -140,8 +140,8 @@ const todosByUserIndex = process.env.TODOS_BY_USER_INDEX
 
   export async function generateUploadUrl(todoId: string, imageId: string, userId: string): Promise<string> {
 
-    logger.info("Initiating url update for todoId",todoId)
-    const attachmentUrl = getAttachmentUrl(todoId)
+    logger.info("Initiating url update for todoId: "+todoId)
+    const attachmentUrl = getAttachmentUrl(imageId)
     await docClient
       .update({
         TableName: todosTable,

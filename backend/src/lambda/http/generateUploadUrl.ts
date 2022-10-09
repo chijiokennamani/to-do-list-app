@@ -15,7 +15,7 @@ export const handler = middy(
     const todoId = event.pathParameters.todoId
     // TODO: Return a presigned URL to upload a file for a TODO item with the provided id
     try {
-      logger.info("Now calling getUploadUrl for todoid:",todoId,"for user",getUserId(event))
+      logger.info("Now calling getUploadUrl for todoid: "+todoId+" for user "+getUserId(event))
       const url = await getUploadUrl(todoId,getUserId(event));
       return {
         statusCode: 201,

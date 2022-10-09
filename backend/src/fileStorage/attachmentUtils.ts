@@ -23,6 +23,8 @@ export function getAttachmentUrl(attachmentId: string): string {
       Key: attachmentId,
       Expires: 300
     })
-    logger.info("Fetched signed url",url)
+    logger.info("Fetched signed url")
+    logger.info(url)
+    logger.info(`https://${bucketName}.s3.amazonaws.com/${attachmentId}`)
 return url
   }

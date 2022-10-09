@@ -32,12 +32,13 @@ export async function getTodos(
     const userId = parseUserId(jwtToken)
     logger.info(`Retrieving to-dos for ${userId} :`)
     return await createTodoListItem({
-      userId,
-      todoId,
-    createdAt: new Date().toISOString(),
-    done: false,
-    attachmentUrl: null,
-    ...createTodoRequest
+      todoId: todoId,
+          userId: userId,
+          name: createTodoRequest.name,
+          createdAt: new Date().toISOString(),
+          dueDate: createTodoRequest.dueDate,
+          done:false,//default behavior
+          attachmentUrl: null
     })
   }
   
